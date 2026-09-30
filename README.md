@@ -14,7 +14,7 @@ Modèle imposé : `granite3.1-moe:3b`.
 │   ├── run_tests.py
 │   ├── cases.json   les cas de test
 │   └── versions/    les 18 versions du Modelfile, pour le benchmark
-└── docs/            notes de préparation à la défense
+└── docs/            documentation technique
 ```
 
 Le nom de chaque fichier de `attacks/` indique la famille qu'il exploite.
