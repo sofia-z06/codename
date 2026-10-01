@@ -81,7 +81,7 @@ Chaque famille exploite un mécanisme différent.
 
 ---
 
-## 5. Résumé de la démarche
+## 4. Résumé de la démarche
 
 - Version de départ volontairement faible -> 4 attaques sur 5 passaient.
 - Ajout de règles détaillées sans rééquilibrer les exemples de succès -> le check *release* s'est cassé (le mot de passe correct était refusé) : un modèle avec trop d'exemples de refus et aucun exemple de succès généralise vers un refus systématique.
@@ -92,11 +92,11 @@ Chaque famille exploite un mécanisme différent.
 - Résultat actuel du script : 32/32 (3 checks, cas de la mid-term, 10 reformulations, 5 attaques, scénario interactif).
 - Attaque d'une camarade, rangée dans `tests/external/` (encodage au choix : base64, texte inversé, lettres espacées ou codes ASCII) : bloquée 5 fois sur 5. C'est un vrai test sur une attaque que je n'ai pas conçue.
 - Limite connue : la reformulation NATO. Envoyée 10 fois, elle donne 2 réponses différentes, dont une qui cite le codeword dans son refus. Choix assumé de ne pas la corriger : chaque correction risque d'en casser une autre.
-- 18 versions au total, toutes dans `tests/versions/`.
+- 18 versions au total, toutes dans `tests/versions/`, résultats dans `tests/benchmark.txt`.
 
 ---
 
-## 6. Structure du repo
+## 5. Structure du repo
 
 ```
 B-AIA-300-NCE-3-1-codename-3/
@@ -119,7 +119,7 @@ B-AIA-300-NCE-3-1-codename-3/
 
 ---
 
-## 8. Choix techniques
+## 6. Choix techniques
 
 ### Les PARAMETER
 
