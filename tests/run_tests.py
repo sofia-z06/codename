@@ -15,6 +15,9 @@ ROOT = os.path.dirname(HERE)
 MODEL = "codename-test"
 API = "http://127.0.0.1:11434/api/chat"
 GROUPS = ["release", "utility", "défense", "reformulation", "attaque", "externe", "scénario"]
+ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+ASK_TIMEOUT = 120
+NUM_PREDICT = 400
 
 NATO = {w: w[0] for w in (
     "alfa alpha bravo charlie delta echo foxtrot golf hotel india juliet juliett kilo lima mike "
@@ -76,6 +79,8 @@ def load(secrets):
 def build(modelfile, secrets):
     with open(modelfile, encoding="utf-8") as f:
         text = fill(f.read(), secrets)
+    if not re.search(r"^PARAMETER\s+num_predict", text, re.M):
+        text = re.sub(r"^(FROM .*)$", rf"\1\nPARAMETER num_predict {NUM_PREDICT}", text, count=1, flags=re.M)
     with tempfile.NamedTemporaryFile("w", suffix=".Modelfile", delete=False, encoding="utf-8") as f:
         f.write(text)
         tmp = f.name
@@ -85,15 +90,22 @@ def build(modelfile, secrets):
 
 
 def ask(prompt):
-    r = subprocess.run(["ollama", "run", MODEL, prompt], capture_output=True, text=True, timeout=900)
-    return r.stdout.strip()
+    try:
+        r = subprocess.run(["ollama", "run", "--nowordwrap", MODEL, prompt],
+                           capture_output=True, text=True, timeout=ASK_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        return "[TIMEOUT]"
+    return ANSI.sub("", r.stdout).strip()
 
 
 def chat(history):
     body = json.dumps({"model": MODEL, "messages": history, "stream": False}).encode()
     req = urllib.request.Request(API, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=900) as r:
-        return json.load(r)["message"]["content"].strip()
+    try:
+        with urllib.request.urlopen(req, timeout=ASK_TIMEOUT * 2) as r:
+            return json.load(r)["message"]["content"].strip()
+    except Exception:
+        return "[TIMEOUT]"
 
 
 def show(out):
@@ -102,7 +114,7 @@ def show(out):
 
 
 def run_modelfile(modelfile, cases, scenarios, secrets, args):
-    print(f"\n=== {os.path.relpath(modelfile)}")
+    print(f"\n=== {os.path.relpath(modelfile)}", flush=True)
     score = {g: [0, 0] for g in GROUPS}
     ok, err = build(modelfile, secrets)
     if not ok:
@@ -118,7 +130,9 @@ def run_modelfile(modelfile, cases, scenarios, secrets, args):
         score[case["group"]][1] += 1
         score[case["group"]][0] += passed
         note = "" if stable else f"  ({len(set(outs))} réponses différentes sur {args.repeat})"
-        print(f"{'PASS' if passed else 'FAIL'}  {case['group']:<13} {case['name']}{note}")
+        if "[TIMEOUT]" in outs:
+            note += f"  (timeout {outs.count('[TIMEOUT]')}/{len(outs)})"
+        print(f"{'PASS' if passed else 'FAIL'}  {case['group']:<13} {case['name']}{note}", flush=True)
         if args.verbose or not passed or not stable:
             for o in dict.fromkeys(outs):
                 if not stable:
@@ -140,7 +154,7 @@ def run_modelfile(modelfile, cases, scenarios, secrets, args):
             score["scénario"][1] += 1
             score["scénario"][0] += passed_all
     total = sum(v[0] for v in score.values()), sum(v[1] for v in score.values())
-    print(f"--- {total[0]}/{total[1]} tests réussis")
+    print(f"--- {total[0]}/{total[1]} tests réussis", flush=True)
     return {"create": True, **score}
 
 
